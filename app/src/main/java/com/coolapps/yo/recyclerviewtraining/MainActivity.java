@@ -19,10 +19,11 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ContactAdapter.OnItemClickListener {
 
     private RecyclerView mRecyclerView;
     private ContactAdapter mAdapter;
+    private List<ContactModel> mData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,15 +32,9 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = findViewById(R.id.my_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        mAdapter = new ContactAdapter();
-        mAdapter.setList(getData());
-        mAdapter.setItemClickListener(new ContactAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClicked(@NonNull ContactModel model) {
-                //TODO: Show contact details page
-                Toast.makeText(MainActivity.this, "Contact clicked: " + model.getName() + ", " + model.getNumber(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        mData = getData();
+        mAdapter = new ContactAdapter(this);
+        mAdapter.setList(mData);
 
         mRecyclerView.setAdapter(mAdapter);
 
@@ -54,40 +49,63 @@ public class MainActivity extends AppCompatActivity {
         }
         return list;
     }
+
+    @Override
+    public void onItemClicked(int position) {
+        //TODO: Show contact details page
+        final ContactModel model = mData.get(position);
+        Toast.makeText(MainActivity.this, "Contact clicked: " + model.getName() + ", " + model.getNumber(), Toast.LENGTH_SHORT).show();
+    }
 }
 
-class ContactItemViewHolder extends RecyclerView.ViewHolder {
+class ContactItemViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
     private TextView mName;
     private TextView mNumber;
+    private ContactAdapter.OnItemClickListener mItemClickListener;
 
-    public ContactItemViewHolder(@NonNull View itemView) {
+    public ContactItemViewHolder(@NonNull View itemView, ContactAdapter.OnItemClickListener listener) {
         super(itemView);
         mName = itemView.findViewById(R.id.name);
         mNumber = itemView.findViewById(R.id.number);
+        mItemClickListener = listener;
+        itemView.setOnClickListener(this);
     }
 
     public void bind(@NonNull ContactModel model) {
         mName.setText(model.getName());
         mNumber.setText(String.valueOf(model.getNumber()));
     }
+
+    @Override
+    public void onClick(View v) {
+        mItemClickListener.onItemClicked(getAdapterPosition());
+    }
 }
 
-class ContactItemWithImageViewHolder extends RecyclerView.ViewHolder {
+class ContactItemWithImageViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
     private TextView mName;
     private TextView mNumber;
     private ImageView mImageView;
+    private ContactAdapter.OnItemClickListener mItemClickListener;
 
-    public ContactItemWithImageViewHolder(@NonNull View itemView) {
+    public ContactItemWithImageViewHolder(@NonNull View itemView, ContactAdapter.OnItemClickListener listener) {
         super(itemView);
         mName = itemView.findViewById(R.id.name);
         mNumber = itemView.findViewById(R.id.number);
         mImageView = itemView.findViewById(R.id.image);
+        mItemClickListener = listener;
+        itemView.setOnClickListener(this);
     }
 
     public void bind(@NonNull ContactModel model) {
         mName.setText(model.getName());
         mNumber.setText(String.valueOf(model.getNumber()));
         mImageView.setImageResource(model.getImageRes());
+    }
+
+    @Override
+    public void onClick(View v) {
+        mItemClickListener.onItemClicked(getAdapterPosition());
     }
 }
 
@@ -99,15 +117,19 @@ class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<ContactModel> mContacts = new ArrayList<>();
     private OnItemClickListener mItemClickListener;
 
+    ContactAdapter(@NonNull OnItemClickListener listener) {
+        mItemClickListener = listener;
+    }
+
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_WITHOUT_IMAGE) {
             final View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.contact_item_view, parent, false);
-            return new ContactItemViewHolder(view);
+            return new ContactItemViewHolder(view, mItemClickListener);
         } else {
             final View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.contact_item_with_background_view, parent, false);
-            return new ContactItemWithImageViewHolder(view);
+            return new ContactItemWithImageViewHolder(view, mItemClickListener);
         }
     }
 
@@ -118,13 +140,6 @@ class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             ((ContactItemWithImageViewHolder) holder).bind(mContacts.get(position));
         }
-
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mItemClickListener.onItemClicked(mContacts.get(holder.getAdapterPosition()));
-            }
-        });
     }
 
     @Override
@@ -146,11 +161,12 @@ class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged(); // This is called to notify the adapter that the list has changed.
     }
 
-    public void setItemClickListener(@NonNull OnItemClickListener itemClickListener) {
-        mItemClickListener = itemClickListener;
+    public void updateItem(@NonNull ContactModel model, int position) {
+        mContacts.set(position, model);
+        notifyItemChanged(position); // This is called to notify the adapter that the item at the position has changed.
     }
 
     interface OnItemClickListener {
-        void onItemClicked(@NonNull ContactModel model);
+        void onItemClicked(int position);
     }
 }
