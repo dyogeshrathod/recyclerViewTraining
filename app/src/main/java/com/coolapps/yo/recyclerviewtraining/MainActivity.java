@@ -137,6 +137,12 @@ class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder holder, int position) {
         if (holder.getItemViewType() == VIEW_TYPE_WITHOUT_IMAGE) {
             ((ContactItemViewHolder) holder).bind(mContacts.get(position));
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Handle click - open details screen
+                }
+            });
         } else {
             ((ContactItemWithImageViewHolder) holder).bind(mContacts.get(position));
         }
